@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEO VOCAB - Sidebar Toggle Edition</title>
+    <title>NEO VOCAB - Step Reveal Edition</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
     
@@ -28,7 +28,6 @@
             position: relative;
         }
 
-        /* サイドバーの初期状態とアニメーション */
         nav {
             width: 260px;
             min-width: 260px;
@@ -37,19 +36,17 @@
             backdrop-filter: blur(10px);
             display: flex;
             flex-direction: column;
-            padding: 70px 20px 20px 20px; /* ボタンと被らないよう上部を開ける */
+            padding: 70px 20px 20px 20px;
             z-index: 10;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* 非表示クラスが適用された時のスタイル */
         nav.collapsed {
             margin-left: -260px;
             opacity: 0;
             pointer-events: none;
         }
 
-        /* 目次切り替えボタン */
         .toggle-sidebar-btn {
             position: absolute;
             top: 20px;
@@ -101,7 +98,7 @@
 
         main { 
             flex: 1; 
-            padding: 80px 40px 40px 40px; /* 上部ボタン用の余白 */
+            padding: 80px 40px 40px 40px; 
             overflow-y: auto; 
             position: relative; 
             transition: all 0.3s;
@@ -138,7 +135,8 @@
         .hidden-word { font-size: 24px; font-weight: bold; color: #00ffaa; transition: opacity 0.1s; }
         .hidden-word.masked { color: #ff3366; background: #ff3366; border-radius: 4px; pointer-events: none; user-select: none; }
 
-        .real-red-sheet { position: absolute; left: 0; top: 0; width: 100%; height: 120px; background: rgba(255, 0, 51, 0.65); box-shadow: 0 8px 32px rgba(0,0,0,0.5); cursor: pointer; z-index: 5; border-bottom: 4px solid #fff; pointer-events: auto; }
+        /* 赤シート：初期値は全面を覆う100%の高さ */
+        .real-red-sheet { position: absolute; left: 0; top: 0; width: 100%; height: 100%; background: rgba(255, 0, 51, 0.65); box-shadow: 0 8px 32px rgba(0,0,0,0.5); cursor: pointer; z-index: 5; border-bottom: 4px solid #fff; pointer-events: auto; }
         .sheet-handle { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); background: #fff; color: #ff3366; padding: 2px 20px; border-radius: 6px 6px 0 0; font-size: 10px; font-weight: bold; pointer-events: none; }
 
         /* 3. ダッシュボード */
@@ -172,6 +170,7 @@
     </nav>
 
     <main>
+        <!-- 1. 入力テスト -->
         <section id="typing" class="view-section active">
             <h2>Input Test (キーボード入力)</h2>
             <div class="card">
@@ -188,20 +187,22 @@
             </div>
         </section>
 
+        <!-- 2. リアル赤シート -->
         <section id="redsheet" class="view-section">
             <h2>Real Red Sheet (1枚の赤シート)</h2>
-            <p style="color:var(--text-muted); margin-bottom:15px;">💡 <b>赤シートをタップすると1単語分下に伸びます！</b>（フチをドラッグして自由に動かすことも可能です）</p>
+            <p style="color:var(--text-muted); margin-bottom:15px;">💡 <b>最初はすべて隠れています。赤シートをタップすると上から1語ずつ表示されます！</b>（フチを動かすことも可能です）</p>
             <div style="margin-bottom: 10px;">
-                <button class="btn" onclick="resetSheetHeight()" style="padding: 6px 15px; font-size: 14px; background: var(--neon-purple); color: white;">シートを一番上に戻す</button>
+                <button class="btn" onclick="resetSheetHeight()" style="padding: 6px 15px; font-size: 14px; background: var(--neon-purple); color: white;">すべて隠す（リセット）</button>
             </div>
             <div class="redsheet-workspace" id="sheet-workspace">
                 <div class="real-red-sheet" id="red-sheet" onclick="advanceSheetByOneWord(event)">
-                    <div class="sheet-handle">PULL / TAP</div>
+                    <div class="sheet-handle">PULL / TAP TO REVEAL</div>
                 </div>
                 <div class="vocab-scroll-area" id="redsheet-list" onscroll="checkWordOcclusion()"></div>
             </div>
         </section>
 
+        <!-- 3. ダッシュボード -->
         <section id="dashboard" class="view-section">
             <h2>Dashboard (学習履歴)</h2>
             <div class="stats-grid">
@@ -220,6 +221,7 @@
             </div>
         </section>
 
+        <!-- 4. 翻訳機能 -->
         <section id="translate" class="view-section">
             <h2>AI Translate</h2>
             <div class="card">
@@ -229,6 +231,7 @@
             </div>
         </section>
 
+        <!-- 5. 写真スキャン -->
         <section id="scan" class="view-section">
             <h2>AI Image Scan</h2>
             <div class="card">
@@ -238,6 +241,7 @@
             </div>
         </section>
 
+        <!-- 7. 4択クイズ -->
         <section id="quiz" class="view-section">
             <h2>4-Choice Quiz</h2>
             <div class="card">
@@ -258,7 +262,6 @@
     </div>
 
     <script>
-        // データ管理
         let vocabData = [
             { id: 1, ja: "影響を与える", en: "influence", learned: false },
             { id: 2, ja: "～を維持する", en: "maintain", learned: false },
@@ -273,17 +276,14 @@
         let currentQuizWord = null;
         let isQuizNext = false;
 
-        // サイドバーの表示・非表示切り替えロジック
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             if (sidebar) {
                 sidebar.classList.toggle('collapsed');
-                // 赤シート表示中だった場合にマスク位置を再計算
                 setTimeout(checkWordOcclusion, 310);
             }
         }
 
-        // 画面切り替え
         function switchView(viewId) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
@@ -294,12 +294,11 @@
             if(activeNavBtn) activeNavBtn.classList.add('active');
 
             if(viewId === 'typing') initTypingTest();
-            if(viewId === 'redsheet') { renderRedSheet(); setTimeout(checkWordOcclusion, 50); }
+            if(viewId === 'redsheet') { renderRedSheet(); resetSheetHeight(); }
             if(viewId === 'quiz') nextQuiz();
             if(viewId === 'dashboard') updateDashboard();
         }
 
-        // 1. インプットテスト
         function initTypingTest() {
             if(vocabData.length === 0) return;
             document.getElementById('type-q').innerText = vocabData[currentTypeIdx].ja;
@@ -406,26 +405,28 @@
             isDragging = false; 
         }
 
+        // タップ時に赤シートの「上辺を削る」のではなく「下辺を上げて1語ずつ露出させる」ロジック
         function advanceSheetByOneWord(e) {
             if (dragMoved || !sheet || !workspace) return;
             
             sheet.style.transition = 'height 0.2s ease-out';
             let currentHeight = sheet.offsetHeight;
-            let workspaceHeight = workspace.offsetHeight;
-            let nextHeight = currentHeight + 95;
             
-            if (nextHeight > workspaceHeight) {
-                nextHeight = workspaceHeight;
+            // 1項目（約95px分）だけ縮める＝1つの意味を表示する
+            let nextHeight = currentHeight - 95; 
+            if (nextHeight < 0) {
+                nextHeight = 0;
             }
             sheet.style.height = nextHeight + 'px';
             
             setTimeout(checkWordOcclusion, 200);
         }
 
+        // 初期化・リセット時は全面（100%）隠す
         function resetSheetHeight() {
-            if(!sheet) return;
+            if(!sheet || !workspace) return;
             sheet.style.transition = 'height 0.3s ease-out';
-            sheet.style.height = '120px';
+            sheet.style.height = workspace.offsetHeight + 'px';
             setTimeout(checkWordOcclusion, 310);
         }
 
@@ -438,7 +439,6 @@
         window.addEventListener('mouseup', stopDrag);
         window.addEventListener('touchend', stopDrag);
 
-        // 3. ダッシュボード
         function updateDashboard() {
             document.getElementById('stat-total').innerText = history.totalAnswers;
             document.getElementById('stat-learned').innerText = vocabData.filter(w => w.learned).length;
@@ -446,14 +446,12 @@
             document.getElementById('stat-accuracy').innerText = rate + '%';
         }
 
-        // 4. 翻訳
         function runTranslate() {
             let text = document.getElementById('trans-input').value;
             if(!text) return;
             document.getElementById('trans-output').innerText = "「" + text + "」の解析・連携が完了しました。";
         }
 
-        // 5. スキャン
         function simulateScan() {
             document.getElementById('scan-preview').innerHTML = `<p style="color:var(--neon-blue)"><i class="fa-solid fa-spinner fa-spin"></i> 文字を検出中...</p>`;
             setTimeout(() => {
@@ -462,7 +460,6 @@
             }, 1200);
         }
 
-        // 6. 音声
         function speakWord(text) {
             let u = new SpeechSynthesisUtterance(text);
             u.lang = 'en-US';
@@ -473,7 +470,6 @@
             if(type === 'quiz' && currentQuizWord) speakWord(currentQuizWord.en);
         }
 
-        // 7. 4択クイズ
         function nextQuiz() {
             if(vocabData.length < 4) {
                 document.getElementById('quiz-options').innerHTML = "クイズには4つ以上の単語が必要です。";
@@ -511,7 +507,6 @@
             }
         }
 
-        // カスタム結果ダイアログの制御
         function showCustomResult(isCorrect, title, message, isQuiz = false) {
             isQuizNext = isQuiz;
             const overlay = document.getElementById('custom-overlay');
@@ -583,7 +578,6 @@
             }, 200);
         }
 
-        // 初期ロード
         window.onload = () => {
             initTypingTest();
         };
