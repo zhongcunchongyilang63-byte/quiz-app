@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iPad AI単語スキャンクイズ</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f1f3f5;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .app-container {
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        .score-board {
+            background-color: #343a40;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+
+        /* クイズカード */
+        .card-container {
+            width: 100%;
+            height: 280px;
+            perspective: 1000px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.4s;
+            cursor: pointer;
+        }
+
+        .card.is-flipped { transform: rotateY(180deg); }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .card-front { border: 2px solid #dee2e6; background: #fff; color: #212529; }
+        .card-back { border: 2px solid #a5d6a7; background: #e8f5e9; color: #2e7d32; transform: rotateY(180deg); }
+
+        .text { font-size: 46px; font-weight: bold; }
+        .audio-btn { background: #e7f5ff; border: none; color: #1c7ed6; padding: 10px 20px; border-radius: 30px; font-size: 18px; margin-top: 15px; cursor: pointer; }
+
+        /* ボタン */
+        .row { display: flex; gap: 15px; margin-bottom: 15px; }
+        .btn { flex: 1; padding: 18px; font-size: 20px; font-weight: bold; border: none; border-radius: 18px; cursor: pointer; }
+        .btn-correct { background-color: #fa5252; color: white; }
+        .btn-wrong { background-color: #4dabf7; color: white; }
+        .btn-next { background-color: #212529; color: white; width: 100%; padding: 15px; font-size: 18px; border-radius: 15px; border: none; margin-bottom: 30px; }
+
+        /* 📸 スキャン・追加エリア（iPadで見やすい枠線） */
+        .scan-section {
+            background-color: white;
+            border-radius: 24px;
+            padding: 25px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            margin-top: 20px;
+            border: 2px dashed #adb5bd;
+        }
+
+        .scan-section h3 { margin-top: 0; color: #495057; }
+
+        /* カメラ起動用隠しインプットを装飾 */
+        .file-input-btn {
+            background-color: #5c7cfa;
+            color: white;
+            padding: 15px 25px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            text-align: left;
+            margin-top: 15px;
+        }
+
+        .input-group label { font-weight: bold; color: #495057; }
+        .input-group input { padding: 12px; font-size: 16px; border: 1px solid #ced4da; border-radius: 8px; }
+        .btn-add { background-color: #37b24d; color: white; padding: 15px; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; margin-top: 10px; cursor: pointer; }
+        
+        #loading { color: #f59f00; font-weight: bold; display: none; margin: 10px 0; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="score-board">
+        通算記録: <span id="totalCorrect">0</span> / <span id="totalAttempt">0</span> 問 (正解率: <span id="rate">0</span>%)
+    </div>
+
+    <div class="card-container">
+        <div class="card" id="quizCard" onclick="flipCard()">
+            <div class="card-face card-front">
+                <div style="color:#868e96; font-size:14px; margin-bottom:10px;">単語</div>
+                <div class="text" id="frontText">apple</div>
+                <button class="audio-btn" onclick="playAudio(event)">🔊 音声</button>
+            </div>
+            <div class="card-face card-back">
+                <div style="color:#868e96; font-size:14px; margin-bottom:10px;">意味</div>
+                <div class="text" id="backText">りんご</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <button class="btn btn-wrong" onclick="handleResult(false)">✕ 苦手</button>
+        <button class="btn btn-correct" onclick="handleResult(true)">◯ 覚えた</button>
+    </div>
+    <button class="btn-next" onclick="nextQuestion()">次のランダム問題へ ➔</button>
+
+    <hr style="border: 0; height: 1px; background: #dee2e6; margin: 20px 0;">
+
+    <div class="scan-section">
+        <h3>✨ カメラで単語をスキャンして追加</h3>
+        
+        <label class="file-input-btn">
+            📷 カメラを起動して文字を写す
+            <input type="file" accept="image/*" capture="environment" id="cameraInput" style="display: none;" onchange="scanImage(this)">
+        </label>
+
+        <div id="loading">🔍 AIが文字を読み取り中...（数秒かかります）</div>
+
+        <div class="input-group">
+            <label>スキャンされた単語（手直しもOK）</label>
+            <input type="text" id="newFront" placeholder="ここに英語が入ります">
+            
+            <label>単語の意味（日本語）</label>
+            <input type="text" id="newBack" placeholder="例: りんご、走る、など">
+            
+            <button class="btn-add" onclick="addNewWord()">この単語をリストに追加する</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 初期単語データ
+    const defaultWords = [
+        { front: "apple", back: "りんご" },
+        { front: "computer", back: "コンピュータ" }
+    ];
+
+    // ローカルストレージから単語リストを読み込む（無ければデフォルト）
+    let quizList = JSON.parse(localStorage.getItem('my_quiz_list')) || defaultWords;
+    let currentIndex = 0;
+
+    let totalCorrect = parseInt(localStorage.getItem('quiz_correct')) || 0;
+    let totalAttempt = parseInt(localStorage.getItem('quiz_attempt')) || 0;
+
+    const card = document.getElementById('quizCard');
+    const frontText = document.getElementById('frontText');
+    const backText = document.getElementById('backText');
+
+    function init() {
+        shuffleQuiz();
+        updateScoreBoard();
+        showQuestion();
+    }
+
+    function shuffleQuiz() {
+        if(quizList.length === 0) return;
+        for (let i = quizList.length - 1; i > 0; i--) {
+            const r = Math.floor(Math.random() * (i + 1));
+            [quizList[i], quizList[r]] = [quizList[r], quizList[i]];
+        }
+        currentIndex = 0;
+    }
+
+    function showQuestion() {
+        if(quizList.length === 0) {
+            frontText.innerText = "単語がありません";
+            backText.innerText = "追加してください";
+            return;
+        }
+        frontText.innerText = quizList[currentIndex].front;
+        backText.innerText = quizList[currentIndex].back;
+    }
+
+    function flipCard() { card.classList.toggle('is-flipped'); }
+
+    function playAudio(event) {
+        event.stopPropagation();
+        if(quizList.length === 0) return;
+        const utterance = new SpeechSynthesisUtterance(quizList[currentIndex].front);
+        utterance.lang = 'en-US';
+        window.speechSynthesis.speak(utterance);
+    }
+
+    function handleResult(isCorrect) {
+        if(quizList.length === 0) return;
+        totalAttempt++;
+        if (isCorrect) totalCorrect++;
+        localStorage.setItem('quiz_correct', totalCorrect);
+        localStorage.setItem('quiz_attempt', totalAttempt);
+        updateScoreBoard();
+        nextQuestion();
+    }
+
+    function updateScoreBoard() {
+        document.getElementById('totalCorrect').innerText = totalCorrect;
+        document.getElementById('totalAttempt').innerText = totalAttempt;
+        const rate = totalAttempt > 0 ? Math.round((totalCorrect / totalAttempt) * 100) : 0;
+        document.getElementById('rate').innerText = rate;
+    }
+
+    function nextQuestion() {
+        if (card.classList.contains('is-flipped')) {
+            card.classList.remove('is-flipped');
+            setTimeout(changeToNext, 300);
+        } else {
+            changeToNext();
+        }
+    }
+
+    function changeToNext() {
+        currentIndex++;
+        if (currentIndex >= quizList.length) {
+            shuffleQuiz();
+        }
+        showQuestion();
+    }
+
+    // 📸 画像から文字をスキャンする処理
+    function scanImage(input) {
+        if (!input.files || !input.files[0]) return;
+        
+        const loading = document.getElementById('loading');
+        loading.style.display = 'block';
+
+        const file = input.files[0];
+        
+        // Tesseract.jsを使って英語の文字を認識
+        Tesseract.recognize(file, 'eng')
+            .then(({ data: { text } }) => {
+                // 余計な空白や改行をキレイにする
+                const cleanedText = text.trim().replace(/[^a-zA-Z ]/g, ""); 
+                document.getElementById('newFront').value = cleanedText;
+                alert("文字の読み取りが完了しました！確認・修正してください。");
+            })
+            .catch(err => {
+                console.error(err);
+                alert("読み取りに失敗しました。もう一度試すか直接入力してください。");
+            })
+            .finally(() => {
+                loading.style.display = 'none';
+            });
+    }
+
+    // 新しい単語をリストに追加して保存
+    function addNewWord() {
+        const front = document.getElementById('newFront').value.trim();
+        const back = document.getElementById('newBack').value.trim();
+
+        if (!front || !back) {
+            alert("単語と意味の両方を入力してください。");
+            return;
+        }
+
+        // リストの先頭に追加
+        quizList.unshift({ front: front, back: back });
+        
+        // ローカルストレージに保存
+        localStorage.setItem('my_quiz_list', JSON.stringify(quizList));
+
+        // 入力欄をクリア
+        document.getElementById('newFront').value = "";
+        document.getElementById('newBack').value = "";
+
+        alert(`「${front}」をクイズに追加しました！`);
+        
+        // クイズ画面を更新
+        currentIndex = 0;
+        showQuestion();
+    }
+
+    init();
+</script>
+
+</body>
+</html>
