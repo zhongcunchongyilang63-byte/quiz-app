@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEO VOCAB - Fixed Translate Edition</title>
+    <title>NEO VOCAB - Custom Dictionary Edition</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
     
@@ -120,10 +120,6 @@
         .btn { background: linear-gradient(135deg, var(--neon-blue), #00a2ff); color: #000; font-weight: bold; border: none; padding: 12px 25px; border-radius: 10px; cursor: pointer; transition: all 0.3s; font-size: 16px; }
         .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0, 242, 255, 0.4); }
 
-        /* 1. インプットテスト用 */
-        .typing-container { display: flex; flex-direction: column; gap: 20px; align-items: center; text-align: center; }
-        .word-q { font-size: 44px; font-weight: bold; margin-bottom: 10px; color: #fff; }
-
         /* 2. リアル赤シート用 */
         .redsheet-workspace { position: relative; width: 100%; height: calc(100vh - 280px); border-radius: 16px; overflow: hidden; background: #0c0e17; border: 1px solid rgba(255,255,255,0.1); }
         .vocab-scroll-area { width: 100%; height: 100%; padding: 20px; overflow-y: auto; }
@@ -135,7 +131,7 @@
         .hidden-word { font-size: 24px; font-weight: bold; color: #00ffaa; transition: opacity 0.1s; }
         .hidden-word.masked { color: #ff3366; background: #ff3366; border-radius: 4px; pointer-events: none; user-select: none; }
 
-        .real-red-sheet { position: absolute; left: 0; top: 0; width: 100%; height: 100%; background: rgba(255, 0, 51, 0.65); box-shadow: 0 8px 32px rgba(0,0,0,0.5); cursor: pointer; z-index: 5; border-bottom: 4px solid #fff; pointer-events: auto; }
+        .real-red-sheet { position: absolute; left: 0; top: 0; width: 100%; height: 0px; background: rgba(255, 0, 51, 0.65); box-shadow: 0 8px 32px rgba(0,0,0,0.5); cursor: pointer; z-index: 5; border-bottom: 4px solid #fff; pointer-events: auto; }
         .sheet-handle { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); background: #fff; color: #ff3366; padding: 2px 20px; border-radius: 6px 6px 0 0; font-size: 10px; font-weight: bold; pointer-events: none; }
 
         /* 3. ダッシュボード */
@@ -189,13 +185,13 @@
         <!-- 2. リアル赤シート -->
         <section id="redsheet" class="view-section">
             <h2>Real Red Sheet (1枚の赤シート)</h2>
-            <p style="color:var(--text-muted); margin-bottom:15px;">💡 <b>最初はすべて隠れています。赤シートをタップすると上から1語ずつ表示されます！</b>（フチを動かすことも可能です）</p>
+            <p style="color:var(--text-muted); margin-bottom:15px;">💡 <b>最初はすべて覆われています（マスク状態）。シートをタップまたは下に引くと、上から順に表示されます。</b></p>
             <div style="margin-bottom: 10px;">
-                <button class="btn" onclick="resetSheetHeight()" style="padding: 6px 15px; font-size: 14px; background: var(--neon-purple); color: white;">すべて隠す（リセット）</button>
+                <button class="btn" onclick="resetSheetHeight()" style="padding: 6px 15px; font-size: 14px; background: var(--neon-purple); color: white;">すべて隠す（上に戻す）</button>
             </div>
             <div class="redsheet-workspace" id="sheet-workspace">
                 <div class="real-red-sheet" id="red-sheet" onclick="advanceSheetByOneWord(event)">
-                    <div class="sheet-handle">PULL / TAP TO REVEAL</div>
+                    <div class="sheet-handle">TAP OR DRAG DOWN TO REVEAL</div>
                 </div>
                 <div class="vocab-scroll-area" id="redsheet-list" onscroll="checkWordOcclusion()"></div>
             </div>
@@ -224,9 +220,28 @@
         <section id="translate" class="view-section">
             <h2>AI Translate</h2>
             <div class="card">
-                <textarea id="trans-input" rows="4" placeholder="翻訳したいテキストを入力..."></textarea>
+                <textarea id="trans-input" rows="3" placeholder="翻訳したいテキストを入力... (例: I am a doctor)"></textarea>
                 <div style="margin: 15px 0; text-align: right;"><button class="btn" onclick="runTranslate()">翻訳を実行</button></div>
-                <div id="trans-output" style="padding:15px; background:rgba(0,0,0,0.2); border-radius:10px; min-height:60px; color:var(--neon-blue); white-space: pre-wrap;">結果がここに表示されます。</div>
+                <div id="trans-output" style="padding:15px; background:rgba(0,0,0,0.2); border-radius:10px; min-height:60px; color:var(--neon-blue); white-space: pre-wrap; margin-bottom: 20px;">結果がここに表示されます。</div>
+            </div>
+
+            <!-- 辞書追加カスタムフォーム -->
+            <h2>Add Custom Dictionary (辞書データの追加)</h2>
+            <div class="card">
+                <p style="color:var(--text-muted); margin-bottom: 15px;">新しい英単語や定型句と、その日本語訳をローカル辞書に保存します。</p>
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <div>
+                        <label style="display:block; margin-bottom:5px; color:var(--neon-blue);">英語 (英単語・定型句)</label>
+                        <input type="text" id="custom-en" placeholder="例: I am a doctor / apple">
+                    </div>
+                    <div>
+                        <label style="display:block; margin-bottom:5px; color:var(--neon-purple);">日本語訳</label>
+                        <input type="text" id="custom-ja" placeholder="例: 私は医者です / りんご">
+                    </div>
+                    <div style="text-align: right; margin-top: 5px;">
+                        <button class="btn" style="background: linear-gradient(135deg, #00ffaa, #00a2ff);" onclick="addWordToDictionary()">辞書に登録する</button>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -261,6 +276,7 @@
     </div>
 
     <script>
+        // 初期の単語リストデータ
         let vocabData = [
             { id: 1, ja: "影響を与える", en: "influence", learned: false },
             { id: 2, ja: "～を維持する", en: "maintain", learned: false },
@@ -269,6 +285,20 @@
             { id: 5, ja: "～を解決する", en: "resolve", learned: false },
             { id: 6, ja: "不可欠な", en: "essential", learned: false }
         ];
+
+        // 翻訳用ベース辞書データ
+        let translationDictionary = {
+            "i am a doctor": "私は医者です。",
+            "i am a student": "私は学生です。",
+            "influence": "影響、影響を与える",
+            "maintain": "～を維持する",
+            "accurate": "正確な",
+            "opportunity": "機会、チャンス",
+            "resolve": "～を解決する",
+            "essential": "不可欠な、極めて重要な",
+            "hello": "こんにちは",
+            "thank you": "ありがとう"
+        };
 
         let history = { totalAnswers: 0, quizCorrect: 0, quizTotal: 0 };
         let currentTypeIdx = 0;
@@ -358,7 +388,7 @@
                 const rect = word.getBoundingClientRect();
                 const wordCenterY = rect.top + (rect.height / 2);
 
-                if (wordCenterY < sheetBottom) {
+                if (wordCenterY > sheetBottom) {
                     word.classList.add('masked');
                     word.innerText = "■".repeat(word.getAttribute('data-word').length);
                 } else {
@@ -408,10 +438,11 @@
             
             sheet.style.transition = 'height 0.2s ease-out';
             let currentHeight = sheet.offsetHeight;
+            let workspaceHeight = workspace.offsetHeight;
             
-            let nextHeight = currentHeight - 95; 
-            if (nextHeight < 0) {
-                nextHeight = 0;
+            let nextHeight = currentHeight + 95; 
+            if (nextHeight > workspaceHeight) {
+                nextHeight = workspaceHeight;
             }
             sheet.style.height = nextHeight + 'px';
             
@@ -419,9 +450,9 @@
         }
 
         function resetSheetHeight() {
-            if(!sheet || !workspace) return;
+            if(!sheet) return;
             sheet.style.transition = 'height 0.3s ease-out';
-            sheet.style.height = workspace.offsetHeight + 'px';
+            sheet.style.height = '0px';
             setTimeout(checkWordOcclusion, 310);
         }
 
@@ -441,7 +472,7 @@
             document.getElementById('stat-accuracy').innerText = rate + '%';
         }
 
-        // 4. 翻訳シミュレーションの修正
+        // 4. 翻訳実行機能
         function runTranslate() {
             let text = document.getElementById('trans-input').value.trim();
             let output = document.getElementById('trans-output');
@@ -452,17 +483,54 @@
             
             output.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> AIが翻訳処理中...`;
             
-            // 擬似的な翻訳応答ロジック
             setTimeout(() => {
+                let lowerText = text.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g,"");
                 let translatedText = "";
-                // 簡易判定（英数字が含まれていたら和訳、日本語なら英訳をシミュレート）
+
                 if(/[a-zA-Z]/.test(text)) {
-                    translatedText = `【和訳シミュレーション】\n${text} の日本語訳：\n「これは入力された英文のAI解析結果です。スマートな学習プラットフォームへようこそ。」`;
+                    if(translationDictionary[lowerText]) {
+                        translatedText = `【和訳結果】\n${translationDictionary[lowerText]}`;
+                    } else {
+                        translatedText = `【和訳】\n（簡易辞書にない英文です）\n入力された英文: "${text}"`;
+                    }
                 } else {
-                    translatedText = `【英訳シミュレーション】\n「${text}」の英語訳：\n"This is the AI analysis result for your input text. Welcome to the smart learning platform."`;
+                    let foundEn = Object.keys(translationDictionary).find(key => translationDictionary[key].includes(text));
+                    if(foundEn) {
+                        translatedText = `【英訳結果】\n"${foundEn}"`;
+                    } else {
+                        translatedText = `【英訳】\n（簡易辞書にない日本語です）\n入力された日本語: "${text}"`;
+                    }
                 }
                 output.innerText = translatedText;
-            }, 800);
+            }, 500);
+        }
+
+        // 辞書への新規追加機能
+        function addWordToDictionary() {
+            let enInput = document.getElementById('custom-en').value.trim();
+            let jaInput = document.getElementById('custom-ja').value.trim();
+
+            if(!enInput || !jaInput) {
+                alert("英語と日本語訳の両方を入力してください。");
+                return;
+            }
+
+            // 辞書オブジェクトを更新
+            let lowerEn = enInput.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g,"");
+            translationDictionary[lowerEn] = jaInput;
+
+            // クイズや入力テスト、赤シートにも自動反映されるよう同期
+            vocabData.push({
+                id: Date.now(),
+                ja: jaInput,
+                en: enInput.toLowerCase(),
+                learned: false
+            });
+
+            // 入力欄をクリアして通知
+            document.getElementById('custom-en').value = '';
+            document.getElementById('custom-ja').value = '';
+            alert(`辞書に登録完了: "${enInput}" -> "${jaInput}"`);
         }
 
         function simulateScan() {
