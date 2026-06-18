@@ -87,7 +87,7 @@
         /* 2. リアル赤シート用 */
         .redsheet-workspace { position: relative; width: 100%; height: calc(100vh - 250px); border-radius: 16px; overflow: hidden; background: #111424; border: 1px solid rgba(255,255,255,0.1); }
         .vocab-scroll-area { width: 100%; height: 100%; padding: 20px; overflow-y: auto; }
-        .red-sheet-row { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: rgba(255,255,255,0.02); border-radius: 12px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); height: 80px; } /* 高さを固定して計算しやすく */
+        .red-sheet-row { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: rgba(255,255,255,0.02); border-radius: 12px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); height: 80px; }
         .hidden-word { font-size: 24px; font-weight: bold; color: #00ffaa; }
         .real-red-sheet { position: absolute; left: 0; top: 0; width: 100%; height: 120px; background: rgba(255, 0, 50, 0.85); box-shadow: 0 10px 30px rgba(0,0,0,0.5); cursor: pointer; z-index: 5; mix-blend-mode: multiply; border-bottom: 6px solid #ff3366; transition: height 0.2s ease-out; }
         .sheet-handle { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); background: #ff3366; color: #fff; padding: 2px 20px; border-radius: 6px 6px 0 0; font-size: 10px; font-weight: bold; pointer-events: none; }
@@ -119,6 +119,7 @@
     </nav>
 
     <main>
+        <!-- 1. 入力・手書きテスト -->
         <section id="typing" class="view-section active">
             <h2>Input Test (手書き・キーボード)</h2>
             <div class="card">
@@ -139,6 +140,7 @@
             </div>
         </section>
 
+        <!-- 2. リアル赤シート -->
         <section id="redsheet" class="view-section">
             <h2>Real Red Sheet (1枚の赤シート)</h2>
             <p style="color:var(--text-muted); margin-bottom:15px;">💡 <b>赤シートをタップすると1単語分下に伸びます！</b>（フチを引っ張って自由自在に動かすことも可能です）</p>
@@ -153,6 +155,7 @@
             </div>
         </section>
 
+        <!-- 3. ダッシュボード -->
         <section id="dashboard" class="view-section">
             <h2>Dashboard (学習履歴)</h2>
             <div class="stats-grid">
@@ -171,6 +174,7 @@
             </div>
         </section>
 
+        <!-- 4. 翻訳機能 -->
         <section id="translate" class="view-section">
             <h2>AI Translate</h2>
             <div class="card">
@@ -180,6 +184,7 @@
             </div>
         </section>
 
+        <!-- 5. 写真スキャン -->
         <section id="scan" class="view-section">
             <h2>AI Image Scan</h2>
             <div class="card">
@@ -189,6 +194,7 @@
             </div>
         </section>
 
+        <!-- 7. 4択クイズ -->
         <section id="quiz" class="view-section">
             <h2>4-Choice Quiz</h2>
             <div class="card">
@@ -199,6 +205,7 @@
         </section>
     </main>
 
+    <!-- かっこいい判定演出用ポップアップ -->
     <div id="custom-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 6, 10, 0.85); backdrop-filter: blur(8px); z-index: 100; justify-content: center; align-items: center;">
         <div id="result-box" style="background: rgba(20, 24, 35, 0.95); border-radius: 20px; padding: 40px; text-align: center; max-width: 450px; width: 90%; transform: scale(0.7); opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 0 50px rgba(0,0,0,0.8);">
             <div id="result-icon" style="font-size: 64px; margin-bottom: 20px; text-shadow: 0 0 20px currentColor;"></div>
@@ -268,7 +275,7 @@
             }
         }
 
-        // 手書きキャンバス
+        // 手書きキャンバス (不具合の原因となる e.preventDefault を安全に処理)
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         let drawing = false;
@@ -294,8 +301,8 @@
         canvas.addEventListener('mousemove', (e) => { if(drawing) { let pos = getMousePos(canvas, e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); } });
         window.addEventListener('mouseup', () => drawing = false);
 
-        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); drawing = true; let pos = getTouchPos(canvas, e); ctx.beginPath(); ctx.moveTo(pos.x, pos.y); });
-        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); if(drawing) { let pos = getTouchPos(canvas, e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); } });
+        canvas.addEventListener('touchstart', (e) => { drawing = true; let pos = getTouchPos(canvas, e); ctx.beginPath(); ctx.moveTo(pos.x, pos.y); }, { passive: true });
+        canvas.addEventListener('touchmove', (e) => { if(drawing) { let pos = getTouchPos(canvas, e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); } }, { passive: true });
         window.addEventListener('touchend', () => drawing = false);
 
         function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
@@ -327,20 +334,20 @@
             renderRedSheet();
         }
 
-        // 赤シートの制御ロジック
+        // 赤シートの制御
         const sheet = document.getElementById('red-sheet');
         const workspace = document.querySelector('.redsheet-workspace');
         let isDragging = false;
-        let dragMoved = false; // タップかドラッグかを判定するフラグ
+        let dragMoved = false;
 
         function startDrag(e) { 
             isDragging = true; 
             dragMoved = false;
-            sheet.style.transition = 'none'; // ドラッグ中はアニメーションを無効化
+            if(sheet) sheet.style.transition = 'none';
         }
         
         function doDrag(e) {
-            if (!isDragging) return;
+            if (!isDragging || !workspace || !sheet) return;
             dragMoved = true;
             let clientY = e.touches ? e.touches[0].clientY : e.clientY;
             let rect = workspace.getBoundingClientRect();
@@ -354,33 +361,33 @@
             isDragging = false; 
         }
 
-        // 1タップごとに1単語分の枠(高さを考慮)だけシートを下にスライドさせる機能
         function advanceSheetByOneWord(e) {
-            if (dragMoved) return; // ドラッグ操作だった場合はタップ処理をスキップ
+            if (dragMoved || !sheet || !workspace) return;
             
-            sheet.style.transition = 'height 0.2s ease-out'; // タップ時は綺麗にアニメーション
+            sheet.style.transition = 'height 0.2s ease-out';
             let currentHeight = sheet.offsetHeight;
             let workspaceHeight = workspace.offsetHeight;
-            
-            // 1単語の行の高さ(約80px) + 余白分(15px) = 95px ずつ下に伸ばす
             let nextHeight = currentHeight + 95;
             
             if (nextHeight > workspaceHeight) {
-                nextHeight = workspaceHeight; // 最大値制限
+                nextHeight = workspaceHeight;
             }
             sheet.style.height = nextHeight + 'px';
         }
 
         function resetSheetHeight() {
+            if(!sheet) return;
             sheet.style.transition = 'height 0.3s ease-out';
-            sheet.style.height = '40px'; // 最初の単語を隠す位置にリセット
+            sheet.style.height = '120px';
         }
 
-        sheet.addEventListener('mousedown', startDrag);
+        if(sheet) {
+            sheet.addEventListener('mousedown', startDrag);
+            sheet.addEventListener('touchstart', startDrag, { passive: true });
+        }
         window.addEventListener('mousemove', doDrag);
+        window.addEventListener('touchmove', doDrag, { passive: true });
         window.addEventListener('mouseup', stopDrag);
-        sheet.addEventListener('touchstart', startDrag);
-        window.addEventListener('touchmove', doDrag);
         window.addEventListener('touchend', stopDrag);
 
         // 3. ダッシュボード
@@ -466,6 +473,8 @@
             const msgEl = document.getElementById('result-msg');
             const btn = document.getElementById('result-next-btn');
 
+            if(!overlay || !box) return;
+
             overlay.style.display = 'flex';
             
             if(isCorrect) {
@@ -509,6 +518,8 @@
             const overlay = document.getElementById('custom-overlay');
             const box = document.getElementById('result-box');
             
+            if(!box || !overlay) return;
+
             box.style.transform = 'scale(0.7)';
             box.style.opacity = '0';
             
