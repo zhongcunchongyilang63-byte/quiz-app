@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>iPad AI単語クイズ（一覧・削除機能付き）</title>
+    <title>iPad AI単語クイズ（スペル記述対応）</title>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
         body {
@@ -25,6 +25,7 @@
             text-align: center;
         }
 
+        /* 🔄 画面最上部：3つのモード切り替えメニュー */
         .mode-selector {
             display: flex;
             background-color: #e9ecef;
@@ -36,8 +37,8 @@
 
         .mode-btn {
             flex: 1;
-            padding: 12px;
-            font-size: 16px;
+            padding: 12px 6px;
+            font-size: 14px;
             font-weight: bold;
             border: none;
             background: none;
@@ -104,23 +105,45 @@
         .text { font-size: 46px; font-weight: bold; }
         .audio-btn { background: #e7f5ff; border: none; color: #1c7ed6; padding: 10px 20px; border-radius: 30px; font-size: 18px; margin-top: 15px; cursor: pointer; }
 
+        /* ✍️ スペル入力エリアのスタイル（最初は非表示） */
+        .input-box-area {
+            background-color: white;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .spell-input {
+            width: 90%;
+            padding: 15px;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            border: 2px solid #ced4da;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            text-transform: lowercase;
+        }
+
+        .spell-result {
+            font-size: 22px;
+            font-weight: bold;
+            margin-top: 10px;
+            min-height: 30px;
+        }
+
         /* ボタン */
         .row { display: flex; gap: 15px; margin-bottom: 15px; }
         .btn { flex: 1; padding: 18px; font-size: 20px; font-weight: bold; border: none; border-radius: 18px; cursor: pointer; }
         .btn-correct { background-color: #fa5252; color: white; }
         .btn-wrong { background-color: #4dabf7; color: white; }
-        .btn-next { background-color: #212529; color: white; width: 100%; padding: 15px; font-size: 18px; border-radius: 15px; border: none; margin-bottom: 30px; }
+        .btn-check { background-color: #74b816; color: white; width: 100%; padding: 15px; font-size: 20px; border-radius: 15px; border: none; font-weight: bold; cursor: pointer; }
+        .btn-next { background-color: #212529; color: white; width: 100%; padding: 15px; font-size: 18px; border-radius: 15px; border: none; margin-bottom: 30px; cursor: pointer; }
 
-        /* スキャン・追加エリア */
-        .section-box {
-            background-color: white;
-            border-radius: 24px;
-            padding: 25px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-            margin-top: 25px;
-            text-align: left;
-        }
-
+        /* セクション共通 */
+        .section-box { background-color: white; border-radius: 24px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-top: 25px; text-align: left; }
         .section-box h3 { margin-top: 0; color: #212529; text-align: center; border-bottom: 2px solid #f1f3f5; padding-bottom: 10px; }
         .file-input-btn { background-color: #5c7cfa; color: white; padding: 15px 25px; font-size: 18px; font-weight: bold; border-radius: 12px; cursor: pointer; display: block; text-align: center; margin: 0 auto 15px auto; width: fit-content; }
         .input-group { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
@@ -129,41 +152,14 @@
         .btn-add { background-color: #37b24d; color: white; padding: 15px; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; margin-top: 10px; cursor: pointer; width: 100%; }
         #loading { color: #f59f00; font-weight: bold; display: none; text-align: center; margin: 10px 0; }
 
-        /* 📋 単語一覧リストのスタイル */
-        .word-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            max-height: 400px;
-            overflow-y: auto; /* 縦スクロールできるようにする */
-        }
-
-        .word-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px;
-            border-bottom: 1px solid #e9ecef;
-            font-size: 18px;
-        }
-
+        /* 単語一覧 */
+        .word-list { list-style: none; padding: 0; margin: 0; max-height: 300px; overflow-y: auto; }
+        .word-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #e9ecef; font-size: 18px; }
         .word-item:last-child { border-bottom: none; }
-
         .word-info { display: flex; flex-direction: column; gap: 4px; }
         .word-en { font-weight: bold; color: #1c7ed6; }
         .word-ja { color: #495057; font-size: 16px; }
-
-        .btn-delete {
-            background-color: #fff5f5;
-            color: #fa5252;
-            border: 1px solid #ffa8a8;
-            padding: 8px 14px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .btn-delete:active { background-color: #ffe3e3; }
+        .btn-delete { background-color: #fff5f5; color: #fa5252; border: 1px solid #ffa8a8; padding: 8px 14px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -171,8 +167,9 @@
 <div class="app-container">
 
     <div class="mode-selector">
-        <button id="modeEnJa" class="mode-btn active" onclick="changeMode('en-ja')">🔤 英 ➔ 日</button>
-        <button id="modeJaEn" class="mode-btn" onclick="changeMode('ja-en')">🇯🇵 日 ➔ 英</button>
+        <button id="modeEnJa" class="mode-btn active" onclick="changeMode('en-ja')">🔤 英➔日</button>
+        <button id="modeJaEn" class="mode-btn" onclick="changeMode('ja-en')">🇯🇵 日➔英</button>
+        <button id="modeSpell" class="mode-btn" onclick="changeMode('spell')">✍️ スペル記入</button>
     </div>
 
     <div class="score-board">
@@ -193,7 +190,13 @@
         </div>
     </div>
 
-    <div class="row">
+    <div class="input-box-area" id="inputBoxArea">
+        <input type="text" id="userSpellInput" class="spell-input" placeholder="ここにスペルを入力" autocomplete="off" autocapitalize="none">
+        <button class="btn-check" onclick="checkSpell()">答え合わせする</button>
+        <div id="spellResult" class="spell-result"></div>
+    </div>
+
+    <div class="row" id="judgeButtons">
         <button class="btn btn-wrong" onclick="handleResult(false)">✕ 苦手</button>
         <button class="btn btn-correct" onclick="handleResult(true)">◯ 覚えた</button>
     </div>
@@ -218,8 +221,7 @@
 
     <div class="section-box">
         <h3>📋 現在の単語帳一覧 (<span id="wordCount">0</span>語)</h3>
-        <ul class="word-list" id="wordListContainer">
-            </ul>
+        <ul class="word-list" id="wordListContainer"></ul>
     </div>
 </div>
 
@@ -232,7 +234,7 @@
 
     let quizList = JSON.parse(localStorage.getItem('my_quiz_list')) || defaultWords;
     let currentIndex = 0;
-    let currentMode = 'en-ja';
+    let currentMode = 'en-ja'; 
 
     let totalCorrect = parseInt(localStorage.getItem('quiz_correct')) || 0;
     let totalAttempt = parseInt(localStorage.getItem('quiz_attempt')) || 0;
@@ -243,19 +245,37 @@
     const frontLabel = document.getElementById('frontLabel');
     const backLabel = document.getElementById('backLabel');
     const audioBtn = document.getElementById('audioBtn');
+    
+    const judgeButtons = document.getElementById('judgeButtons');
+    const inputBoxArea = document.getElementById('inputBoxArea');
+    const userSpellInput = document.getElementById('userSpellInput');
+    const spellResult = document.getElementById('spellResult');
 
     function init() {
         shuffleQuiz();
         updateScoreBoard();
         showQuestion();
-        renderWordList(); // 一覧の表示
+        renderWordList();
     }
 
     function changeMode(mode) {
         currentMode = mode;
         document.getElementById('modeEnJa').classList.toggle('active', mode === 'en-ja');
         document.getElementById('modeJaEn').classList.toggle('active', mode === 'ja-en');
+        document.getElementById('modeSpell').classList.toggle('active', mode === 'spell');
+        
         if (card.classList.contains('is-flipped')) card.classList.remove('is-flipped');
+
+        if (mode === 'spell') {
+            judgeButtons.style.display = 'none';
+            inputBoxArea.style.display = 'block';
+            userSpellInput.value = "";
+            spellResult.innerText = "";
+        } else {
+            judgeButtons.style.display = 'flex';
+            inputBoxArea.style.display = 'none';
+        }
+
         showQuestion();
     }
 
@@ -275,19 +295,50 @@
             return;
         }
         const currentWord = quizList[currentIndex];
+        
         if (currentMode === 'en-ja') {
             frontLabel.innerText = "単語 (英語)";
             frontText.innerText = currentWord.front;
             backLabel.innerText = "意味 (日本語)";
             backText.innerText = currentWord.back;
             audioBtn.style.display = 'inline-block';
-        } else {
+        } else if (currentMode === 'ja-en') {
             frontLabel.innerText = "意味 (日本語)";
             frontText.innerText = currentWord.back;
             backLabel.innerText = "単語 (英語)";
             backText.innerText = currentWord.front;
             audioBtn.style.display = 'none';
+        } else if (currentMode === 'spell') {
+            frontLabel.innerText = "この日本語のスペルを打ち込んでね";
+            frontText.innerText = currentWord.back; 
+            backLabel.innerText = "正解のスペル";
+            backText.innerText = currentWord.front; 
+            audioBtn.style.display = 'none';
         }
+    }
+
+    function checkSpell() {
+        if(quizList.length === 0) return;
+        
+        const uInput = userSpellInput.value.trim().toLowerCase();
+        const correctAnswer = quizList[currentIndex].front.trim().toLowerCase();
+
+        totalAttempt++;
+
+        if (uInput === correctAnswer) {
+            spellResult.innerText = "⭕ 正解！カンペキ！";
+            spellResult.style.color = "#2b8a3e";
+            totalCorrect++;
+            if (!card.classList.contains('is-flipped')) card.classList.add('is-flipped'); 
+        } else {
+            spellResult.innerText = `❌ 不正解... (あなたの入力: ${uInput || '空欄'})`;
+            spellResult.style.color = "#c92a2a";
+            if (!card.classList.contains('is-flipped')) card.classList.add('is-flipped'); 
+        }
+
+        localStorage.setItem('quiz_correct', totalCorrect);
+        localStorage.setItem('quiz_attempt', totalAttempt);
+        updateScoreBoard();
     }
 
     function flipCard() { card.classList.toggle('is-flipped'); }
@@ -329,10 +380,13 @@
     function changeToNext() {
         currentIndex++;
         if (currentIndex >= quizList.length) shuffleQuiz();
+        
+        userSpellInput.value = "";
+        spellResult.innerText = "";
+        
         showQuestion();
     }
 
-    // スキャン処理
     function scanImage(input) {
         if (!input.files || !input.files[0]) return;
         const loading = document.getElementById('loading');
@@ -341,7 +395,7 @@
         
         Tesseract.recognize(file, 'eng')
             .then(({ data: { text } }) => {
-                const cleanedText = text.trim().replace(/[^a-zA-Z ]/g, ""); 
+                const cleanedText = text.trim().replace(/[^a-zA-Z ]/g, "").toLowerCase(); 
                 document.getElementById('newFront').value = cleanedText;
                 alert("文字の読み取りが完了しました！");
             })
@@ -352,9 +406,8 @@
             .finally(() => { loading.style.display = 'none'; });
     }
 
-    // 単語の追加
     function addNewWord() {
-        const front = document.getElementById('newFront').value.trim();
+        const front = document.getElementById('newFront').value.trim().toLowerCase();
         const back = document.getElementById('newBack').value.trim();
 
         if (!front || !back) {
@@ -370,18 +423,16 @@
         alert(`「${front}」を追加しました！`);
     }
 
-    // 📋 単語一覧画面を生成して描画する関数
     function renderWordList() {
         const container = document.getElementById('wordListContainer');
         document.getElementById('wordCount').innerText = quizList.length;
-        container.innerHTML = ""; // 一旦クリア
+        container.innerHTML = "";
 
         if (quizList.length === 0) {
             container.innerHTML = "<li style='text-align:center; padding:20px; color:#868e96;'>単語が登録されていません。</li>";
             return;
         }
 
-        // 登録されている単語をループで一覧表示に組み立てる
         quizList.forEach((word, index) => {
             const li = document.createElement('li');
             li.className = 'word-item';
@@ -396,19 +447,19 @@
         });
     }
 
-    // 単語を1件削除する関数
     function deleteWord(index) {
-        if(confirm(`「${quizList[index].front}」を単語帳から削除しますか？`)) {
-            quizList.splice(index, 1); // 指定した位置のデータを削除
+        if(confirm(`「${quizList[index].front}」を削除しますか？`)) {
+            quizList.splice(index, 1);
             saveAndRefresh();
         }
     }
 
-    // データの保存と画面全体の更新
     function saveAndRefresh() {
         localStorage.setItem('my_quiz_list', JSON.stringify(quizList));
         renderWordList();
         currentIndex = 0;
+        userSpellInput.value = "";
+        spellResult.innerText = "";
         showQuestion();
     }
 
