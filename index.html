@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>iPad AI単語スキャンクイズ</title>
+    <title>iPad AI単語クイズ（一覧・削除機能付き）</title>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
         body {
@@ -25,12 +25,40 @@
             text-align: center;
         }
 
-        .score-board {
-            background-color: #343a40;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 50px;
+        .mode-selector {
+            display: flex;
+            background-color: #e9ecef;
+            padding: 6px;
+            border-radius: 30px;
+            margin-bottom: 20px;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 12px;
             font-size: 16px;
+            font-weight: bold;
+            border: none;
+            background: none;
+            border-radius: 25px;
+            cursor: pointer;
+            color: #495057;
+            transition: all 0.2s;
+        }
+
+        .mode-btn.active {
+            background-color: #212529;
+            color: white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .score-board {
+            background-color: #495057;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-size: 15px;
             font-weight: bold;
             margin-bottom: 20px;
             display: inline-block;
@@ -83,49 +111,70 @@
         .btn-wrong { background-color: #4dabf7; color: white; }
         .btn-next { background-color: #212529; color: white; width: 100%; padding: 15px; font-size: 18px; border-radius: 15px; border: none; margin-bottom: 30px; }
 
-        /* 📸 スキャン・追加エリア（iPadで見やすい枠線） */
-        .scan-section {
+        /* スキャン・追加エリア */
+        .section-box {
             background-color: white;
             border-radius: 24px;
             padding: 25px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-            margin-top: 20px;
-            border: 2px dashed #adb5bd;
-        }
-
-        .scan-section h3 { margin-top: 0; color: #495057; }
-
-        /* カメラ起動用隠しインプットを装飾 */
-        .file-input-btn {
-            background-color: #5c7cfa;
-            color: white;
-            padding: 15px 25px;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 12px;
-            cursor: pointer;
-            display: inline-block;
-            margin-bottom: 15px;
-        }
-
-        .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+            margin-top: 25px;
             text-align: left;
-            margin-top: 15px;
         }
 
+        .section-box h3 { margin-top: 0; color: #212529; text-align: center; border-bottom: 2px solid #f1f3f5; padding-bottom: 10px; }
+        .file-input-btn { background-color: #5c7cfa; color: white; padding: 15px 25px; font-size: 18px; font-weight: bold; border-radius: 12px; cursor: pointer; display: block; text-align: center; margin: 0 auto 15px auto; width: fit-content; }
+        .input-group { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
         .input-group label { font-weight: bold; color: #495057; }
         .input-group input { padding: 12px; font-size: 16px; border: 1px solid #ced4da; border-radius: 8px; }
-        .btn-add { background-color: #37b24d; color: white; padding: 15px; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; margin-top: 10px; cursor: pointer; }
-        
-        #loading { color: #f59f00; font-weight: bold; display: none; margin: 10px 0; }
+        .btn-add { background-color: #37b24d; color: white; padding: 15px; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; margin-top: 10px; cursor: pointer; width: 100%; }
+        #loading { color: #f59f00; font-weight: bold; display: none; text-align: center; margin: 10px 0; }
+
+        /* 📋 単語一覧リストのスタイル */
+        .word-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 400px;
+            overflow-y: auto; /* 縦スクロールできるようにする */
+        }
+
+        .word-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 18px;
+        }
+
+        .word-item:last-child { border-bottom: none; }
+
+        .word-info { display: flex; flex-direction: column; gap: 4px; }
+        .word-en { font-weight: bold; color: #1c7ed6; }
+        .word-ja { color: #495057; font-size: 16px; }
+
+        .btn-delete {
+            background-color: #fff5f5;
+            color: #fa5252;
+            border: 1px solid #ffa8a8;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-delete:active { background-color: #ffe3e3; }
     </style>
 </head>
 <body>
 
 <div class="app-container">
+
+    <div class="mode-selector">
+        <button id="modeEnJa" class="mode-btn active" onclick="changeMode('en-ja')">🔤 英 ➔ 日</button>
+        <button id="modeJaEn" class="mode-btn" onclick="changeMode('ja-en')">🇯🇵 日 ➔ 英</button>
+    </div>
+
     <div class="score-board">
         通算記録: <span id="totalCorrect">0</span> / <span id="totalAttempt">0</span> 問 (正解率: <span id="rate">0</span>%)
     </div>
@@ -133,12 +182,12 @@
     <div class="card-container">
         <div class="card" id="quizCard" onclick="flipCard()">
             <div class="card-face card-front">
-                <div style="color:#868e96; font-size:14px; margin-bottom:10px;">単語</div>
+                <div style="color:#868e96; font-size:14px; margin-bottom:10px;" id="frontLabel">問題</div>
                 <div class="text" id="frontText">apple</div>
-                <button class="audio-btn" onclick="playAudio(event)">🔊 音声</button>
+                <button class="audio-btn" id="audioBtn" onclick="playAudio(event)">🔊 音声</button>
             </div>
             <div class="card-face card-back">
-                <div style="color:#868e96; font-size:14px; margin-bottom:10px;">意味</div>
+                <div style="color:#868e96; font-size:14px; margin-bottom:10px;" id="backLabel">答え</div>
                 <div class="text" id="backText">りんご</div>
             </div>
         </div>
@@ -150,40 +199,40 @@
     </div>
     <button class="btn-next" onclick="nextQuestion()">次のランダム問題へ ➔</button>
 
-    <hr style="border: 0; height: 1px; background: #dee2e6; margin: 20px 0;">
-
-    <div class="scan-section">
+    <div class="section-box" style="border: 2px dashed #adb5bd;">
         <h3>✨ カメラで単語をスキャンして追加</h3>
-        
         <label class="file-input-btn">
             📷 カメラを起動して文字を写す
             <input type="file" accept="image/*" capture="environment" id="cameraInput" style="display: none;" onchange="scanImage(this)">
         </label>
-
-        <div id="loading">🔍 AIが文字を読み取り中...（数秒かかります）</div>
+        <div id="loading">🔍 AIが文字を読み取り中...</div>
 
         <div class="input-group">
-            <label>スキャンされた単語（手直しもOK）</label>
+            <label>スキャンされた単語（英語）</label>
             <input type="text" id="newFront" placeholder="ここに英語が入ります">
-            
             <label>単語の意味（日本語）</label>
             <input type="text" id="newBack" placeholder="例: りんご、走る、など">
-            
             <button class="btn-add" onclick="addNewWord()">この単語をリストに追加する</button>
         </div>
+    </div>
+
+    <div class="section-box">
+        <h3>📋 現在の単語帳一覧 (<span id="wordCount">0</span>語)</h3>
+        <ul class="word-list" id="wordListContainer">
+            </ul>
     </div>
 </div>
 
 <script>
-    // 初期単語データ
     const defaultWords = [
         { front: "apple", back: "りんご" },
-        { front: "computer", back: "コンピュータ" }
+        { front: "computer", back: "コンピュータ" },
+        { front: "application", back: "アプリ" }
     ];
 
-    // ローカルストレージから単語リストを読み込む（無ければデフォルト）
     let quizList = JSON.parse(localStorage.getItem('my_quiz_list')) || defaultWords;
     let currentIndex = 0;
+    let currentMode = 'en-ja';
 
     let totalCorrect = parseInt(localStorage.getItem('quiz_correct')) || 0;
     let totalAttempt = parseInt(localStorage.getItem('quiz_attempt')) || 0;
@@ -191,10 +240,22 @@
     const card = document.getElementById('quizCard');
     const frontText = document.getElementById('frontText');
     const backText = document.getElementById('backText');
+    const frontLabel = document.getElementById('frontLabel');
+    const backLabel = document.getElementById('backLabel');
+    const audioBtn = document.getElementById('audioBtn');
 
     function init() {
         shuffleQuiz();
         updateScoreBoard();
+        showQuestion();
+        renderWordList(); // 一覧の表示
+    }
+
+    function changeMode(mode) {
+        currentMode = mode;
+        document.getElementById('modeEnJa').classList.toggle('active', mode === 'en-ja');
+        document.getElementById('modeJaEn').classList.toggle('active', mode === 'ja-en');
+        if (card.classList.contains('is-flipped')) card.classList.remove('is-flipped');
         showQuestion();
     }
 
@@ -213,8 +274,20 @@
             backText.innerText = "追加してください";
             return;
         }
-        frontText.innerText = quizList[currentIndex].front;
-        backText.innerText = quizList[currentIndex].back;
+        const currentWord = quizList[currentIndex];
+        if (currentMode === 'en-ja') {
+            frontLabel.innerText = "単語 (英語)";
+            frontText.innerText = currentWord.front;
+            backLabel.innerText = "意味 (日本語)";
+            backText.innerText = currentWord.back;
+            audioBtn.style.display = 'inline-block';
+        } else {
+            frontLabel.innerText = "意味 (日本語)";
+            frontText.innerText = currentWord.back;
+            backLabel.innerText = "単語 (英語)";
+            backText.innerText = currentWord.front;
+            audioBtn.style.display = 'none';
+        }
     }
 
     function flipCard() { card.classList.toggle('is-flipped'); }
@@ -255,39 +328,31 @@
 
     function changeToNext() {
         currentIndex++;
-        if (currentIndex >= quizList.length) {
-            shuffleQuiz();
-        }
+        if (currentIndex >= quizList.length) shuffleQuiz();
         showQuestion();
     }
 
-    // 📸 画像から文字をスキャンする処理
+    // スキャン処理
     function scanImage(input) {
         if (!input.files || !input.files[0]) return;
-        
         const loading = document.getElementById('loading');
         loading.style.display = 'block';
-
         const file = input.files[0];
         
-        // Tesseract.jsを使って英語の文字を認識
         Tesseract.recognize(file, 'eng')
             .then(({ data: { text } }) => {
-                // 余計な空白や改行をキレイにする
                 const cleanedText = text.trim().replace(/[^a-zA-Z ]/g, ""); 
                 document.getElementById('newFront').value = cleanedText;
-                alert("文字の読み取りが完了しました！確認・修正してください。");
+                alert("文字の読み取りが完了しました！");
             })
             .catch(err => {
                 console.error(err);
-                alert("読み取りに失敗しました。もう一度試すか直接入力してください。");
+                alert("読み取りに失敗しました。");
             })
-            .finally(() => {
-                loading.style.display = 'none';
-            });
+            .finally(() => { loading.style.display = 'none'; });
     }
 
-    // 新しい単語をリストに追加して保存
+    // 単語の追加
     function addNewWord() {
         const front = document.getElementById('newFront').value.trim();
         const back = document.getElementById('newBack').value.trim();
@@ -297,19 +362,52 @@
             return;
         }
 
-        // リストの先頭に追加
         quizList.unshift({ front: front, back: back });
-        
-        // ローカルストレージに保存
-        localStorage.setItem('my_quiz_list', JSON.stringify(quizList));
+        saveAndRefresh();
 
-        // 入力欄をクリア
         document.getElementById('newFront').value = "";
         document.getElementById('newBack').value = "";
+        alert(`「${front}」を追加しました！`);
+    }
 
-        alert(`「${front}」をクイズに追加しました！`);
-        
-        // クイズ画面を更新
+    // 📋 単語一覧画面を生成して描画する関数
+    function renderWordList() {
+        const container = document.getElementById('wordListContainer');
+        document.getElementById('wordCount').innerText = quizList.length;
+        container.innerHTML = ""; // 一旦クリア
+
+        if (quizList.length === 0) {
+            container.innerHTML = "<li style='text-align:center; padding:20px; color:#868e96;'>単語が登録されていません。</li>";
+            return;
+        }
+
+        // 登録されている単語をループで一覧表示に組み立てる
+        quizList.forEach((word, index) => {
+            const li = document.createElement('li');
+            li.className = 'word-item';
+            li.innerHTML = `
+                <div class="word-info">
+                    <span class="word-en">${word.front}</span>
+                    <span class="word-ja">${word.back}</span>
+                </div>
+                <button class="btn-delete" onclick="deleteWord(${index})">削除</button>
+            `;
+            container.appendChild(li);
+        });
+    }
+
+    // 単語を1件削除する関数
+    function deleteWord(index) {
+        if(confirm(`「${quizList[index].front}」を単語帳から削除しますか？`)) {
+            quizList.splice(index, 1); // 指定した位置のデータを削除
+            saveAndRefresh();
+        }
+    }
+
+    // データの保存と画面全体の更新
+    function saveAndRefresh() {
+        localStorage.setItem('my_quiz_list', JSON.stringify(quizList));
+        renderWordList();
         currentIndex = 0;
         showQuestion();
     }
