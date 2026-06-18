@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEO VOCAB - Custom Dictionary Edition</title>
+    <title>NEO VOCAB - High Readability Edition</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Noto+Sans+JP:wght@500;700&display=swap" rel="stylesheet">
     
     <style>
         :root {
@@ -14,7 +14,7 @@
             --neon-blue: #00f2ff;
             --neon-purple: #fe019a;
             --text-light: #e2e8f0;
-            --text-muted: #64748b;
+            --text-muted: #8a99ad; /* 読みやすさのために少し明るく調整 */
             --success: #10b981;
         }
 
@@ -111,7 +111,57 @@
         h2 { font-size: 28px; margin-bottom: 25px; font-family: 'Orbitron'; border-bottom: 2px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
         .card { background: var(--panel-bg); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 16px; padding: 30px; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); backdrop-filter: blur(10px); margin-bottom: 20px; }
         
-        input[type="text"], textarea {
+        /* 1. 入力テスト用のデザイン調整（視認性向上） */
+        .typing-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 25px;
+            padding: 20px 0;
+        }
+
+        .word-q { 
+            font-size: 38px; 
+            font-weight: 700; 
+            color: #ffffff; 
+            text-align: center; 
+            letter-spacing: 1px;
+            text-shadow: 0 0 15px rgba(0, 242, 255, 0.4); /* 暗い背景でもクッキリ見える発光 */
+            margin-bottom: 10px;
+        }
+
+        input[type="text"].typing-input-field {
+            width: 100%; 
+            background: rgba(0, 0, 0, 0.5); 
+            border: 2px solid rgba(0, 242, 255, 0.4);
+            padding: 18px; 
+            border-radius: 12px; 
+            color: #ffffff; 
+            font-size: 22px; /* 入力文字を大きく */
+            font-weight: 500;
+            outline: none; 
+            transition: all 0.3s;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+        input[type="text"].typing-input-field:focus { 
+            border-color: var(--neon-blue); 
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.5); 
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        .btn.typing-submit-btn {
+            padding: 16px 30px;
+            font-size: 18px;
+            letter-spacing: 1px;
+        }
+
+        /* 共通要素 */
+        textarea {
+            width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(0, 242, 255, 0.3);
+            padding: 15px; border-radius: 10px; color: #fff; font-size: 18px; outline: none; transition: all 0.3s;
+        }
+        input[type="text"] {
             width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(0, 242, 255, 0.3);
             padding: 15px; border-radius: 10px; color: #fff; font-size: 18px; outline: none; transition: all 0.3s;
         }
@@ -131,7 +181,7 @@
         .hidden-word { font-size: 24px; font-weight: bold; color: #00ffaa; transition: opacity 0.1s; }
         .hidden-word.masked { color: #ff3366; background: #ff3366; border-radius: 4px; pointer-events: none; user-select: none; }
 
-        .real-red-sheet { position: absolute; left: 0; top: 0; width: 100%; height: 0px; background: rgba(255, 0, 51, 0.65); box-shadow: 0 8px 32px rgba(0,0,0,0.5); cursor: pointer; z-index: 5; border-bottom: 4px solid #fff; pointer-events: auto; }
+        .real-red-sheet { position: absolute; left: 0; top: 0; width: 100%; height: 0px; background: rgba(255, 0, 51, 0.65); box-shadow: 0 8px 32px rgba(0,0,0,0.5); cursor: pointer; z-index: 5; border-bottom: 4px solid #fff; transition: height 0.25s cubic-bezier(0.25, 1, 0.5, 1); }
         .sheet-handle { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); background: #fff; color: #ff3366; padding: 2px 20px; border-radius: 6px 6px 0 0; font-size: 10px; font-weight: bold; pointer-events: none; }
 
         /* 3. ダッシュボード */
@@ -171,12 +221,12 @@
             <div class="card">
                 <div class="typing-container">
                     <div class="word-q" id="type-q">影響を与える</div>
-                    <div style="width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 15px;">
-                        <input type="text" id="type-input" placeholder="英語を入力（Enterまたは判定ボタンで次へ）" onkeydown="checkTyping(event)">
-                        <button class="btn" onclick="submitTypingAnswer()">解答を判定する</button>
+                    <div style="width: 100%; max-width: 550px; display: flex; flex-direction: column; gap: 18px;">
+                        <input type="text" id="type-input" class="typing-input-field" placeholder="ここに英語を入力" onkeydown="checkTyping(event)">
+                        <button class="btn typing-submit-btn" onclick="submitTypingAnswer()">解答を判定する</button>
                     </div>
                 </div>
-                <div style="margin-top: 25px; text-align: center;">
+                <div style="margin-top: 20px; text-align: center;">
                     <button class="btn" style="background:transparent; color:#fff; border:1px solid rgba(255,255,255,0.2);" onclick="speakCurrentWord('typing')"><i class="fa-solid fa-volume-high"></i> 音声を聞く</button>
                 </div>
             </div>
@@ -185,13 +235,13 @@
         <!-- 2. リアル赤シート -->
         <section id="redsheet" class="view-section">
             <h2>Real Red Sheet (1枚の赤シート)</h2>
-            <p style="color:var(--text-muted); margin-bottom:15px;">💡 <b>最初はすべて覆われています（マスク状態）。シートをタップまたは下に引くと、上から順に表示されます。</b></p>
+            <p style="color:var(--text-muted); margin-bottom:15px;">💡 <b>シートをタップすると、上から1語ずつ順番に隠れが解除されて表示されます。</b></p>
             <div style="margin-bottom: 10px;">
                 <button class="btn" onclick="resetSheetHeight()" style="padding: 6px 15px; font-size: 14px; background: var(--neon-purple); color: white;">すべて隠す（上に戻す）</button>
             </div>
             <div class="redsheet-workspace" id="sheet-workspace">
                 <div class="real-red-sheet" id="red-sheet" onclick="advanceSheetByOneWord(event)">
-                    <div class="sheet-handle">TAP OR DRAG DOWN TO REVEAL</div>
+                    <div class="sheet-handle">TAP TO REVEAL ONE BY ONE</div>
                 </div>
                 <div class="vocab-scroll-area" id="redsheet-list" onscroll="checkWordOcclusion()"></div>
             </div>
@@ -259,7 +309,7 @@
         <section id="quiz" class="view-section">
             <h2>4-Choice Quiz</h2>
             <div class="card">
-                <div class="word-q" id="quiz-q">influence</div>
+                <div class="word-q" id="quiz-q" style="font-family:'Orbitron'; font-size:32px;">influence</div>
                 <div class="quiz-options" id="quiz-options"></div>
                 <div style="margin-top: 20px; text-align: right;"><button class="btn" onclick="speakCurrentWord('quiz')"><i class="fa-solid fa-volume-high"></i> 音声を聞く</button></div>
             </div>
@@ -276,7 +326,6 @@
     </div>
 
     <script>
-        // 初期の単語リストデータ
         let vocabData = [
             { id: 1, ja: "影響を与える", en: "influence", learned: false },
             { id: 2, ja: "～を維持する", en: "maintain", learned: false },
@@ -286,7 +335,6 @@
             { id: 6, ja: "不可欠な", en: "essential", learned: false }
         ];
 
-        // 翻訳用ベース辞書データ
         let translationDictionary = {
             "i am a doctor": "私は医者です。",
             "i am a student": "私は学生です。",
@@ -355,7 +403,6 @@
             }
         }
 
-        // 2. リアル赤シート
         function renderRedSheet() {
             const container = document.getElementById('redsheet-list');
             container.innerHTML = '';
@@ -407,36 +454,10 @@
 
         const sheet = document.getElementById('red-sheet');
         const workspace = document.getElementById('sheet-workspace');
-        let isDragging = false;
-        let dragMoved = false;
-
-        function startDrag(e) { 
-            isDragging = true; 
-            dragMoved = false;
-            if(sheet) sheet.style.transition = 'none';
-        }
-        
-        function doDrag(e) {
-            if (!isDragging || !workspace || !sheet) return;
-            dragMoved = true;
-            let clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            let rect = workspace.getBoundingClientRect();
-            let relativeY = clientY - rect.top;
-            if (relativeY < 0) relativeY = 0;
-            if (relativeY > rect.height) relativeY = rect.height;
-            sheet.style.height = relativeY + 'px';
-            
-            checkWordOcclusion();
-        }
-        
-        function stopDrag() { 
-            isDragging = false; 
-        }
 
         function advanceSheetByOneWord(e) {
-            if (dragMoved || !sheet || !workspace) return;
+            if (!sheet || !workspace) return;
             
-            sheet.style.transition = 'height 0.2s ease-out';
             let currentHeight = sheet.offsetHeight;
             let workspaceHeight = workspace.offsetHeight;
             
@@ -446,24 +467,14 @@
             }
             sheet.style.height = nextHeight + 'px';
             
-            setTimeout(checkWordOcclusion, 200);
+            setTimeout(checkWordOcclusion, 250);
         }
 
         function resetSheetHeight() {
             if(!sheet) return;
-            sheet.style.transition = 'height 0.3s ease-out';
             sheet.style.height = '0px';
-            setTimeout(checkWordOcclusion, 310);
+            setTimeout(checkWordOcclusion, 260);
         }
-
-        if(sheet) {
-            sheet.addEventListener('mousedown', startDrag);
-            sheet.addEventListener('touchstart', startDrag, { passive: true });
-        }
-        window.addEventListener('mousemove', doDrag);
-        window.addEventListener('touchmove', doDrag, { passive: true });
-        window.addEventListener('mouseup', stopDrag);
-        window.addEventListener('touchend', stopDrag);
 
         function updateDashboard() {
             document.getElementById('stat-total').innerText = history.totalAnswers;
@@ -472,7 +483,6 @@
             document.getElementById('stat-accuracy').innerText = rate + '%';
         }
 
-        // 4. 翻訳実行機能
         function runTranslate() {
             let text = document.getElementById('trans-input').value.trim();
             let output = document.getElementById('trans-output');
@@ -505,7 +515,6 @@
             }, 500);
         }
 
-        // 辞書への新規追加機能
         function addWordToDictionary() {
             let enInput = document.getElementById('custom-en').value.trim();
             let jaInput = document.getElementById('custom-ja').value.trim();
@@ -515,11 +524,9 @@
                 return;
             }
 
-            // 辞書オブジェクトを更新
             let lowerEn = enInput.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g,"");
             translationDictionary[lowerEn] = jaInput;
 
-            // クイズや入力テスト、赤シートにも自動反映されるよう同期
             vocabData.push({
                 id: Date.now(),
                 ja: jaInput,
@@ -527,7 +534,6 @@
                 learned: false
             });
 
-            // 入力欄をクリアして通知
             document.getElementById('custom-en').value = '';
             document.getElementById('custom-ja').value = '';
             alert(`辞書に登録完了: "${enInput}" -> "${jaInput}"`);
