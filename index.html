@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEO VOCAB - Step Reveal Edition</title>
+    <title>NEO VOCAB - Fixed Translate Edition</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
     
@@ -135,7 +135,6 @@
         .hidden-word { font-size: 24px; font-weight: bold; color: #00ffaa; transition: opacity 0.1s; }
         .hidden-word.masked { color: #ff3366; background: #ff3366; border-radius: 4px; pointer-events: none; user-select: none; }
 
-        /* 赤シート：初期値は全面を覆う100%の高さ */
         .real-red-sheet { position: absolute; left: 0; top: 0; width: 100%; height: 100%; background: rgba(255, 0, 51, 0.65); box-shadow: 0 8px 32px rgba(0,0,0,0.5); cursor: pointer; z-index: 5; border-bottom: 4px solid #fff; pointer-events: auto; }
         .sheet-handle { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); background: #fff; color: #ff3366; padding: 2px 20px; border-radius: 6px 6px 0 0; font-size: 10px; font-weight: bold; pointer-events: none; }
 
@@ -227,7 +226,7 @@
             <div class="card">
                 <textarea id="trans-input" rows="4" placeholder="翻訳したいテキストを入力..."></textarea>
                 <div style="margin: 15px 0; text-align: right;"><button class="btn" onclick="runTranslate()">翻訳を実行</button></div>
-                <div id="trans-output" style="padding:15px; background:rgba(0,0,0,0.2); border-radius:10px; min-height:60px; color:var(--neon-blue)">結果がここに表示されます。</div>
+                <div id="trans-output" style="padding:15px; background:rgba(0,0,0,0.2); border-radius:10px; min-height:60px; color:var(--neon-blue); white-space: pre-wrap;">結果がここに表示されます。</div>
             </div>
         </section>
 
@@ -376,7 +375,6 @@
             setTimeout(checkWordOcclusion, 10);
         }
 
-        // 赤シートのドラッグ＆タップ制御
         const sheet = document.getElementById('red-sheet');
         const workspace = document.getElementById('sheet-workspace');
         let isDragging = false;
@@ -405,14 +403,12 @@
             isDragging = false; 
         }
 
-        // タップ時に赤シートの「上辺を削る」のではなく「下辺を上げて1語ずつ露出させる」ロジック
         function advanceSheetByOneWord(e) {
             if (dragMoved || !sheet || !workspace) return;
             
             sheet.style.transition = 'height 0.2s ease-out';
             let currentHeight = sheet.offsetHeight;
             
-            // 1項目（約95px分）だけ縮める＝1つの意味を表示する
             let nextHeight = currentHeight - 95; 
             if (nextHeight < 0) {
                 nextHeight = 0;
@@ -422,7 +418,6 @@
             setTimeout(checkWordOcclusion, 200);
         }
 
-        // 初期化・リセット時は全面（100%）隠す
         function resetSheetHeight() {
             if(!sheet || !workspace) return;
             sheet.style.transition = 'height 0.3s ease-out';
@@ -446,10 +441,28 @@
             document.getElementById('stat-accuracy').innerText = rate + '%';
         }
 
+        // 4. 翻訳シミュレーションの修正
         function runTranslate() {
-            let text = document.getElementById('trans-input').value;
-            if(!text) return;
-            document.getElementById('trans-output').innerText = "「" + text + "」の解析・連携が完了しました。";
+            let text = document.getElementById('trans-input').value.trim();
+            let output = document.getElementById('trans-output');
+            if(!text) {
+                output.innerText = "テキストを入力してください。";
+                return;
+            }
+            
+            output.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> AIが翻訳処理中...`;
+            
+            // 擬似的な翻訳応答ロジック
+            setTimeout(() => {
+                let translatedText = "";
+                // 簡易判定（英数字が含まれていたら和訳、日本語なら英訳をシミュレート）
+                if(/[a-zA-Z]/.test(text)) {
+                    translatedText = `【和訳シミュレーション】\n${text} の日本語訳：\n「これは入力された英文のAI解析結果です。スマートな学習プラットフォームへようこそ。」`;
+                } else {
+                    translatedText = `【英訳シミュレーション】\n「${text}」の英語訳：\n"This is the AI analysis result for your input text. Welcome to the smart learning platform."`;
+                }
+                output.innerText = translatedText;
+            }, 800);
         }
 
         function simulateScan() {
