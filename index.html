@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEO VOCAB - Ultimate Edition</title>
+    <title>NEO VOCAB - Stable Edition</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
     
@@ -79,18 +79,20 @@
         .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0, 242, 255, 0.4); }
 
         /* 1. インプットテスト用 */
-        .typing-container { display: flex; gap: 20px; align-items: center; }
-        .word-q { flex: 1; font-size: 40px; text-align: center; font-weight: bold; }
-        .canvas-area { border: 1px dashed var(--text-muted); border-radius: 12px; background: rgba(0,0,0,0.2); position: relative; width: 100%; max-width: 400px; height: 160px; }
-        #canvas { cursor: crosshair; width: 100%; height: 100%; border-radius: 12px; background: transparent; }
+        .typing-container { display: flex; flex-direction: column; gap: 20px; align-items: center; text-align: center; }
+        .word-q { font-size: 44px; font-weight: bold; margin-bottom: 10px; color: #fff; }
 
-        /* 2. リアル赤シート用 */
+        /* 2. リアル赤シート用（確実に文字が消える新ブレンド調整） */
         .redsheet-workspace { position: relative; width: 100%; height: calc(100vh - 250px); border-radius: 16px; overflow: hidden; background: #111424; border: 1px solid rgba(255,255,255,0.1); }
         .vocab-scroll-area { width: 100%; height: 100%; padding: 20px; overflow-y: auto; }
         .red-sheet-row { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: rgba(255,255,255,0.02); border-radius: 12px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); height: 80px; }
-        .hidden-word { font-size: 24px; font-weight: bold; color: #00ffaa; }
-        .real-red-sheet { position: absolute; left: 0; top: 0; width: 100%; height: 120px; background: rgba(255, 0, 50, 0.85); box-shadow: 0 10px 30px rgba(0,0,0,0.5); cursor: pointer; z-index: 5; mix-blend-mode: multiply; border-bottom: 6px solid #ff3366; transition: height 0.2s ease-out; }
-        .sheet-handle { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); background: #ff3366; color: #fff; padding: 2px 20px; border-radius: 6px 6px 0 0; font-size: 10px; font-weight: bold; pointer-events: none; }
+        
+        /* 隠す文字の色を赤シートと同色の「完全な赤」に指定 */
+        .hidden-word { font-size: 24px; font-weight: bold; color: #ff3366; background-color: transparent; }
+        
+        /* 赤シート：色を不透明の濃い赤にし、screenブレンドで赤文字を完全に消去 */
+        .real-red-sheet { position: absolute; left: 0; top: 0; width: 100%; height: 120px; background: #ff3366; box-shadow: 0 10px 30px rgba(0,0,0,0.5); cursor: pointer; z-index: 5; mix-blend-mode: screen; border-bottom: 4px solid #fff; transition: height 0.2s ease-out; }
+        .sheet-handle { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); background: #fff; color: #ff3366; padding: 2px 20px; border-radius: 6px 6px 0 0; font-size: 10px; font-weight: bold; pointer-events: none; }
 
         /* 3. ダッシュボード */
         .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
@@ -119,31 +121,25 @@
     </nav>
 
     <main>
-        <!-- 1. 入力・手書きテスト -->
         <section id="typing" class="view-section active">
-            <h2>Input Test (手書き・キーボード)</h2>
+            <h2>Input Test (キーボード入力)</h2>
             <div class="card">
                 <div class="typing-container">
                     <div class="word-q" id="type-q">影響を与える</div>
-                    <div style="flex:1; display:flex; flex-direction:column; gap:15px;">
+                    <div style="width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 15px;">
                         <input type="text" id="type-input" placeholder="英語を入力（Enterまたは判定ボタンで次へ）" onkeydown="checkTyping(event)">
                         <button class="btn" onclick="submitTypingAnswer()">解答を判定する</button>
-                        <div class="canvas-area">
-                            <canvas id="canvas" width="400" height="160"></canvas>
-                            <button class="btn" style="position:absolute; bottom:5px; right:5px; padding:5px 10px; font-size:12px;" onclick="clearCanvas()">消去</button>
-                        </div>
                     </div>
                 </div>
-                <div style="margin-top: 20px; text-align: right;">
-                    <button class="btn" style="background:transparent; color:#fff; border:1px solid;" onclick="speakCurrentWord('typing')"><i class="fa-solid fa-volume-high"></i> 音声を聞く</button>
+                <div style="margin-top: 25px; text-align: center;">
+                    <button class="btn" style="background:transparent; color:#fff; border:1px solid rgba(255,255,255,0.2);" onclick="speakCurrentWord('typing')"><i class="fa-solid fa-volume-high"></i> 音声を聞く</button>
                 </div>
             </div>
         </section>
 
-        <!-- 2. リアル赤シート -->
         <section id="redsheet" class="view-section">
             <h2>Real Red Sheet (1枚の赤シート)</h2>
-            <p style="color:var(--text-muted); margin-bottom:15px;">💡 <b>赤シートをタップすると1単語分下に伸びます！</b>（フチを引っ張って自由自在に動かすことも可能です）</p>
+            <p style="color:var(--text-muted); margin-bottom:15px;">💡 <b>赤シートをタップすると1単語分下に伸びます！</b>（フチを引っ張って動かすことも可能です）</p>
             <div style="margin-bottom: 10px;">
                 <button class="btn" onclick="resetSheetHeight()" style="padding: 6px 15px; font-size: 14px; background: var(--neon-purple); color: white;">シートを一番上に戻す</button>
             </div>
@@ -155,7 +151,6 @@
             </div>
         </section>
 
-        <!-- 3. ダッシュボード -->
         <section id="dashboard" class="view-section">
             <h2>Dashboard (学習履歴)</h2>
             <div class="stats-grid">
@@ -174,7 +169,6 @@
             </div>
         </section>
 
-        <!-- 4. 翻訳機能 -->
         <section id="translate" class="view-section">
             <h2>AI Translate</h2>
             <div class="card">
@@ -184,7 +178,6 @@
             </div>
         </section>
 
-        <!-- 5. 写真スキャン -->
         <section id="scan" class="view-section">
             <h2>AI Image Scan</h2>
             <div class="card">
@@ -194,7 +187,6 @@
             </div>
         </section>
 
-        <!-- 7. 4択クイズ -->
         <section id="quiz" class="view-section">
             <h2>4-Choice Quiz</h2>
             <div class="card">
@@ -205,7 +197,6 @@
         </section>
     </main>
 
-    <!-- かっこいい判定演出用ポップアップ -->
     <div id="custom-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 6, 10, 0.85); backdrop-filter: blur(8px); z-index: 100; justify-content: center; align-items: center;">
         <div id="result-box" style="background: rgba(20, 24, 35, 0.95); border-radius: 20px; padding: 40px; text-align: center; max-width: 450px; width: 90%; transform: scale(0.7); opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 0 50px rgba(0,0,0,0.8);">
             <div id="result-icon" style="font-size: 64px; margin-bottom: 20px; text-shadow: 0 0 20px currentColor;"></div>
@@ -252,7 +243,7 @@
             if(vocabData.length === 0) return;
             document.getElementById('type-q').innerText = vocabData[currentTypeIdx].ja;
             document.getElementById('type-input').value = '';
-            clearCanvas();
+            document.getElementById('type-input').focus();
         }
 
         function checkTyping(e) {
@@ -274,38 +265,6 @@
                 showCustomResult(false, 'ACCESS DENIED', `不正確な入力です。<br>正解は <span style="color:var(--neon-purple); font-weight:bold;">${correct}</span> (${vocabData[currentTypeIdx].ja}) です。`);
             }
         }
-
-        // 手書きキャンバス (不具合の原因となる e.preventDefault を安全に処理)
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        let drawing = false;
-        ctx.strokeStyle = '#00f2ff';
-        ctx.lineWidth = 4;
-
-        function getTouchPos(canvasDom, touchEvent) {
-            let rect = canvasDom.getBoundingClientRect();
-            return {
-                x: (touchEvent.touches[0].clientX - rect.left) * (canvasDom.width / rect.width),
-                y: (touchEvent.touches[0].clientY - rect.top) * (canvasDom.height / rect.height)
-            };
-        }
-        function getMousePos(canvasDom, mouseEvent) {
-            let rect = canvasDom.getBoundingClientRect();
-            return {
-                x: (mouseEvent.clientX - rect.left) * (canvasDom.width / rect.width),
-                y: (mouseEvent.clientY - rect.top) * (canvasDom.height / rect.height)
-            };
-        }
-
-        canvas.addEventListener('mousedown', (e) => { drawing = true; let pos = getMousePos(canvas, e); ctx.beginPath(); ctx.moveTo(pos.x, pos.y); });
-        canvas.addEventListener('mousemove', (e) => { if(drawing) { let pos = getMousePos(canvas, e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); } });
-        window.addEventListener('mouseup', () => drawing = false);
-
-        canvas.addEventListener('touchstart', (e) => { drawing = true; let pos = getTouchPos(canvas, e); ctx.beginPath(); ctx.moveTo(pos.x, pos.y); }, { passive: true });
-        canvas.addEventListener('touchmove', (e) => { if(drawing) { let pos = getTouchPos(canvas, e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); } }, { passive: true });
-        window.addEventListener('touchend', () => drawing = false);
-
-        function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
 
         // 2. リアル赤シート
         function renderRedSheet() {
@@ -334,7 +293,7 @@
             renderRedSheet();
         }
 
-        // 赤シートの制御
+        // 赤シートのドラッグ＆タップ制御
         const sheet = document.getElementById('red-sheet');
         const workspace = document.querySelector('.redsheet-workspace');
         let isDragging = false;
@@ -367,7 +326,7 @@
             sheet.style.transition = 'height 0.2s ease-out';
             let currentHeight = sheet.offsetHeight;
             let workspaceHeight = workspace.offsetHeight;
-            let nextHeight = currentHeight + 95;
+            let nextHeight = currentHeight + 95; // 1項目分進む
             
             if (nextHeight > workspaceHeight) {
                 nextHeight = workspaceHeight;
