@@ -1,16 +1,23 @@
+サイドバー（左側の目次ナビゲーション）を**ボタン一つで表示・非表示（トグル）できるようにアップデート**しました。
+
+スマートフォンのような画面幅が狭いデバイスだけでなく、PC画面でも作業スペースを広く取りたい時に自由に折りたためる仕様にしています。画面左上にトグル用の三本線アイコン（ハンバーガーボタン）を追加しました。
+
+以下のコードをすべてコピーして、ファイルを上書き保存してください。
+
+```html
 <!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEO VOCAB - Stable Edition</title>
+    <title>NEO VOCAB - Sidebar Toggle Edition</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
         :root {
             --bg-dark: #0a0b10;
-            --panel-bg: rgba(20, 24, 35, 0.8);
+            --panel-bg: rgba(20, 24, 35, 0.9);
             --neon-blue: #00f2ff;
             --neon-purple: #fe019a;
             --text-light: #e2e8f0;
@@ -25,17 +32,54 @@
             min-height: 100vh;
             display: flex;
             overflow: hidden;
+            position: relative;
         }
 
+        /* サイドバーの初期状態とアニメーション */
         nav {
             width: 260px;
+            min-width: 260px;
             background: var(--panel-bg);
             border-right: 1px solid rgba(0, 242, 255, 0.2);
             backdrop-filter: blur(10px);
             display: flex;
             flex-direction: column;
-            padding: 20px;
+            padding: 70px 20px 20px 20px; /* ボタンと被らないよう上部を開ける */
             z-index: 10;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* 非表示クラスが適用された時のスタイル */
+        nav.collapsed {
+            margin-left: -260px;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* 目次切り替えボタン */
+        .toggle-sidebar-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(20, 24, 35, 0.8);
+            border: 1px solid rgba(0, 242, 255, 0.4);
+            color: var(--neon-blue);
+            width: 45px;
+            height: 45px;
+            border-radius: 10px;
+            cursor: pointer;
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            transition: all 0.2s;
+            box-shadow: 0 0 10px rgba(0, 242, 255, 0.1);
+        }
+        .toggle-sidebar-btn:hover {
+            background: rgba(0, 242, 255, 0.2);
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.4);
+            transform: scale(1.05);
         }
 
         .logo {
@@ -54,6 +98,7 @@
             background: transparent; border: none; color: var(--text-muted); padding: 15px 20px;
             text-align: left; font-size: 16px; cursor: pointer; border-radius: 12px; margin-bottom: 10px;
             transition: all 0.3s; display: flex; align-items: center; gap: 15px;
+            width: 100%;
         }
 
         .nav-btn:hover, .nav-btn.active {
@@ -61,7 +106,14 @@
             text-shadow: 0 0 8px rgba(0, 242, 255, 0.6);
         }
 
-        main { flex: 1; padding: 40px; overflow-y: auto; position: relative; }
+        main { 
+            flex: 1; 
+            padding: 80px 40px 40px 40px; /* 上部ボタン用の余白 */
+            overflow-y: auto; 
+            position: relative; 
+            transition: all 0.3s;
+        }
+
         .view-section { display: none; animation: fadeIn 0.4s ease forwards; }
         .view-section.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -82,16 +134,18 @@
         .typing-container { display: flex; flex-direction: column; gap: 20px; align-items: center; text-align: center; }
         .word-q { font-size: 44px; font-weight: bold; margin-bottom: 10px; color: #fff; }
 
-        /* 2. リアル赤シート用（確実に文字が消える新ブレンド調整） */
-        .redsheet-workspace { position: relative; width: 100%; height: calc(100vh - 250px); border-radius: 16px; overflow: hidden; background: #111424; border: 1px solid rgba(255,255,255,0.1); }
+        /* 2. リアル赤シート用 */
+        .redsheet-workspace { position: relative; width: 100%; height: calc(100vh - 280px); border-radius: 16px; overflow: hidden; background: #0c0e17; border: 1px solid rgba(255,255,255,0.1); }
         .vocab-scroll-area { width: 100%; height: 100%; padding: 20px; overflow-y: auto; }
-        .red-sheet-row { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: rgba(255,255,255,0.02); border-radius: 12px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); height: 80px; }
+        .red-sheet-row { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: rgba(255,255,255,0.02); border-radius: 12px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); height: 80px; position: relative; }
         
-        /* 隠す文字の色を赤シートと同色の「完全な赤」に指定 */
-        .hidden-word { font-size: 24px; font-weight: bold; color: #ff3366; background-color: transparent; }
+        .word-container { display: flex; align-items: center; }
+        .japanese-text { font-size: 16px; color: var(--text-muted); margin-right: 30px; display: inline-block; width: 150px; }
         
-        /* 赤シート：色を不透明の濃い赤にし、screenブレンドで赤文字を完全に消去 */
-        .real-red-sheet { position: absolute; left: 0; top: 0; width: 100%; height: 120px; background: #ff3366; box-shadow: 0 10px 30px rgba(0,0,0,0.5); cursor: pointer; z-index: 5; mix-blend-mode: screen; border-bottom: 4px solid #fff; transition: height 0.2s ease-out; }
+        .hidden-word { font-size: 24px; font-weight: bold; color: #00ffaa; transition: opacity 0.1s; }
+        .hidden-word.masked { color: #ff3366; background: #ff3366; border-radius: 4px; pointer-events: none; user-select: none; }
+
+        .real-red-sheet { position: absolute; left: 0; top: 0; width: 100%; height: 120px; background: rgba(255, 0, 51, 0.65); box-shadow: 0 8px 32px rgba(0,0,0,0.5); cursor: pointer; z-index: 5; border-bottom: 4px solid #fff; pointer-events: auto; }
         .sheet-handle { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); background: #fff; color: #ff3366; padding: 2px 20px; border-radius: 6px 6px 0 0; font-size: 10px; font-weight: bold; pointer-events: none; }
 
         /* 3. ダッシュボード */
@@ -110,7 +164,11 @@
 </head>
 <body>
 
-    <nav>
+    <button class="toggle-sidebar-btn" onclick="toggleSidebar()" title="目次の表示/非表示">
+        <i class="fa-solid fa-bars"></i>
+    </button>
+
+    <nav id="sidebar">
         <div class="logo">NEO VOCAB</div>
         <button class="nav-btn active" id="nav-typing" onclick="switchView('typing')"><i class="fa-solid fa-keyboard"></i>Input Test</button>
         <button class="nav-btn" id="nav-redsheet" onclick="switchView('redsheet')"><i class="fa-solid fa-eye-slash"></i>Red Sheet</button>
@@ -139,15 +197,15 @@
 
         <section id="redsheet" class="view-section">
             <h2>Real Red Sheet (1枚の赤シート)</h2>
-            <p style="color:var(--text-muted); margin-bottom:15px;">💡 <b>赤シートをタップすると1単語分下に伸びます！</b>（フチを引っ張って動かすことも可能です）</p>
+            <p style="color:var(--text-muted); margin-bottom:15px;">💡 <b>赤シートをタップすると1単語分下に伸びます！</b>（フチをドラッグして自由に動かすことも可能です）</p>
             <div style="margin-bottom: 10px;">
                 <button class="btn" onclick="resetSheetHeight()" style="padding: 6px 15px; font-size: 14px; background: var(--neon-purple); color: white;">シートを一番上に戻す</button>
             </div>
-            <div class="redsheet-workspace">
+            <div class="redsheet-workspace" id="sheet-workspace">
                 <div class="real-red-sheet" id="red-sheet" onclick="advanceSheetByOneWord(event)">
                     <div class="sheet-handle">PULL / TAP</div>
                 </div>
-                <div class="vocab-scroll-area" id="redsheet-list"></div>
+                <div class="vocab-scroll-area" id="redsheet-list" onscroll="checkWordOcclusion()"></div>
             </div>
         </section>
 
@@ -222,6 +280,16 @@
         let currentQuizWord = null;
         let isQuizNext = false;
 
+        // サイドバーの表示・非表示切り替えロジック
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) {
+                sidebar.classList.toggle('collapsed');
+                // 赤シート表示中だった場合にマスク位置を再計算
+                setTimeout(checkWordOcclusion, 310);
+            }
+        }
+
         // 画面切り替え
         function switchView(viewId) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
@@ -233,7 +301,7 @@
             if(activeNavBtn) activeNavBtn.classList.add('active');
 
             if(viewId === 'typing') initTypingTest();
-            if(viewId === 'redsheet') renderRedSheet();
+            if(viewId === 'redsheet') { renderRedSheet(); setTimeout(checkWordOcclusion, 50); }
             if(viewId === 'quiz') nextQuiz();
             if(viewId === 'dashboard') updateDashboard();
         }
@@ -274,9 +342,9 @@
                 const div = document.createElement('div');
                 div.className = 'red-sheet-row';
                 div.innerHTML = `
-                    <div>
-                        <span style="font-size:16px; color:var(--text-muted); margin-right:30px; display:inline-block; width:120px;">${word.ja}</span>
-                        <span class="hidden-word">${word.en}</span>
+                    <div class="word-container">
+                        <span class="japanese-text">${word.ja}</span>
+                        <span class="hidden-word" data-word="${word.en}">${word.en}</span>
                     </div>
                     <div>
                         <button class="btn" style="background:var(--success); color:#fff; padding:6px 12px; font-size:14px;" onclick="markAsLearned(${word.id}); event.stopPropagation();">覚えた</button>
@@ -287,15 +355,38 @@
             });
         }
 
+        function checkWordOcclusion() {
+            const sheet = document.getElementById('red-sheet');
+            const workspace = document.getElementById('sheet-workspace');
+            if (!sheet || !workspace) return;
+
+            const sheetBottom = workspace.getBoundingClientRect().top + sheet.offsetHeight;
+            const words = document.querySelectorAll('.hidden-word');
+
+            words.forEach(word => {
+                const rect = word.getBoundingClientRect();
+                const wordCenterY = rect.top + (rect.height / 2);
+
+                if (wordCenterY < sheetBottom) {
+                    word.classList.add('masked');
+                    word.innerText = "■".repeat(word.getAttribute('data-word').length);
+                } else {
+                    word.classList.remove('masked');
+                    word.innerText = word.getAttribute('data-word');
+                }
+            });
+        }
+
         function markAsLearned(id) {
             let word = vocabData.find(w => w.id === id);
             if(word) word.learned = true;
             renderRedSheet();
+            setTimeout(checkWordOcclusion, 10);
         }
 
         // 赤シートのドラッグ＆タップ制御
         const sheet = document.getElementById('red-sheet');
-        const workspace = document.querySelector('.redsheet-workspace');
+        const workspace = document.getElementById('sheet-workspace');
         let isDragging = false;
         let dragMoved = false;
 
@@ -314,6 +405,8 @@
             if (relativeY < 0) relativeY = 0;
             if (relativeY > rect.height) relativeY = rect.height;
             sheet.style.height = relativeY + 'px';
+            
+            checkWordOcclusion();
         }
         
         function stopDrag() { 
@@ -326,18 +419,21 @@
             sheet.style.transition = 'height 0.2s ease-out';
             let currentHeight = sheet.offsetHeight;
             let workspaceHeight = workspace.offsetHeight;
-            let nextHeight = currentHeight + 95; // 1項目分進む
+            let nextHeight = currentHeight + 95;
             
             if (nextHeight > workspaceHeight) {
                 nextHeight = workspaceHeight;
             }
             sheet.style.height = nextHeight + 'px';
+            
+            setTimeout(checkWordOcclusion, 200);
         }
 
         function resetSheetHeight() {
             if(!sheet) return;
             sheet.style.transition = 'height 0.3s ease-out';
             sheet.style.height = '120px';
+            setTimeout(checkWordOcclusion, 310);
         }
 
         if(sheet) {
@@ -501,3 +597,5 @@
     </script>
 </body>
 </html>
+
+```
